@@ -17,12 +17,12 @@
   },
   "dependencies": {
     "gawk": "^4.6.2",
-    "jdklib": "^2.3.1",
+    "jdklib": "^2.4.0",
     "semver": "^6.0.0",
     "source-map-support": "^0.5.11"
   },
   "devDependencies": {
-    "appcd-gulp": "^2.0.1",
+    "appcd-gulp": "^2.1.0",
     "gulp": "^4.0.0"
   },
   "homepage": "https://github.com/appcelerator/appc-daemon-plugins/tree/master/packages/appcd-plugin-jdk",
