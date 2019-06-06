@@ -8,9 +8,8 @@ The `info` service uses [jdklib](https://github.com/appcelerator/jdklib) to dete
 JDKs and returns the information.
 
 ```js
-appcd.call('/jdk/latest/info', ctx => {
-	console.log(ctx.response);
-});
+const { response } = await appcd.call('/jdk/latest/info');
+console.log(response);
 ```
 
 ## Legal
