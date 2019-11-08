@@ -2,8 +2,6 @@ import DetectEngine from 'appcd-detect';
 import gawk from 'gawk';
 import version from './version';
 
-import * as registry from 'appcd-winreg';
-
 import { arrayify, get } from 'appcd-util';
 import { DataServiceDispatcher } from 'appcd-dispatcher';
 import { detect, jdkLocations } from 'jdklib';
@@ -24,26 +22,43 @@ export default class JDKInfoService extends DataServiceDispatcher {
 		this.data = gawk([]);
 
 		const paths = arrayify(get(cfg, 'java.searchPaths'), true).concat(jdkLocations[process.platform]);
+		const keys = [
+			'HKLM\\SOFTWARE\\JavaSoft\\Java Development Kit',
+			'HKLM\\SOFTWARE\\Wow6432Node\\JavaSoft\\Java Development Kit',
+			'HKLM\\SOFTWARE\\JavaSoft\\JDK'
+		];
 
 		this.engine = new DetectEngine({
-			checkDir:             this.checkDir.bind(this),
-			depth:                1,
-			env:                  'JAVA_HOME',
-			exe:                  `javac${exe}`,
-			multiple:             true,
+			checkDir:       this.checkDir.bind(this),
+			depth:          1,
+			env:            'JAVA_HOME',
+			exe:            `javac${exe}`,
+			multiple:       true,
 			paths,
-			processResults:       this.processResults.bind(this),
-			redetect:             true,
-			refreshPathsInterval: 15000,
-			registryCallback:     this.registryCallback.bind(this),
-			watch:                true
+			processResults: this.processResults.bind(this),
+			redetect:       true,
+			registryKeys:   keys.map(key => ({
+				key,
+				depth: 1,
+				value: 'JavaHome',
+				transform(state, { winreglib }) {
+					try {
+						state.isDefault = winreglib.get(`${key}\\${winreglib.get(key, 'CurrentVersion')}`, 'JavaHome');
+					} catch (e) {
+						state.isDefault = false;
+					}
+				}
+			})),
+			watch: true
 		});
 
-		this.engine.on('results', results => {
-			gawk.set(this.data, results);
-		});
+		this.engine.on('results', results => gawk.set(this.data, results));
 
 		await this.engine.start();
+
+		gawk.watch(cfg, [ 'java', 'searchPaths' ], value => {
+			this.engine.paths = arrayify(value, true).concat(jdkLocations[process.platform]);
+		});
 	}
 
 	/**
@@ -114,58 +129,5 @@ export default class JDKInfoService extends DataServiceDispatcher {
 				results[results.length - 1].default = true;
 			}
 		}
-	}
-
-	/**
-	 * Scans the Windows Registry for JDK paths to search.
-	 *
-	 * @returns {Promise} Resolves object containing an array of paths and a default path.
-	 * @access private
-	 */
-	registryCallback() {
-		const scanRegistry = async (key) => {
-			// try to get the current version, but if this fails, no biggie
-			let currentVersion;
-			try {
-				currentVersion = await registry.get('HKLM', key, 'CurrentVersion');
-			} catch (ex) {
-				// squelch
-			}
-			const defaultKey = currentVersion && `${key}\\${currentVersion}`;
-
-			// get all subkeys which should only be valid JDKs
-			try {
-				const keys = await registry.keys('HKLM', key);
-				return Promise
-					.all(keys.map(async (key) => {
-						const javaHome = await registry.get('HKLM', key, 'JavaHome');
-						if (javaHome) {
-							console.log(`found JavaHome: ${javaHome}`);
-							return { [javaHome]: key === defaultKey };
-						}
-					}))
-					.then(jdks => Object.assign.apply(null, jdks))
-					.catch(() => ({}));
-			} catch (ex) {
-				// squelch
-			}
-		};
-
-		console.log('checking Windows registry for JavaHome paths');
-
-		return Promise
-			.all([
-				scanRegistry('\\Software\\JavaSoft\\Java Development Kit'),
-				scanRegistry('\\Software\\Wow6432Node\\JavaSoft\\Java Development Kit'),
-				scanRegistry('\\Software\\JavaSoft\\JDK')
-			])
-			.then(results => {
-				results = Object.assign.apply(null, results);
-				return {
-					paths: Object.keys(results),
-					defaultPath: Object.keys(results).filter(key => results[key])[0]
-				};
-			})
-			.catch(() => ({}));
 	}
 }
