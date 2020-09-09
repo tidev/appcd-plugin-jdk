@@ -1,3 +1,7 @@
+# v1.6.3
+
+ * chore: Updated dependencies.
+
 # v1.6.2 (Jun 5, 2020)
 
  * chore: Added API version 2.x.
