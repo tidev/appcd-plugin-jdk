@@ -1,6 +1,6 @@
 {
   "name": "@appcd/plugin-jdk",
-  "version": "1.6.2",
+  "version": "1.6.3",
   "description": "JDK service for the Appc Daemon",
   "main": "./dist/index",
   "author": "Appcelerator, Inc. <npmjs@appcelerator.com>",
@@ -16,13 +16,13 @@
     "test": "gulp test"
   },
   "dependencies": {
-    "gawk": "^4.7.1",
-    "jdklib": "^3.0.2",
-    "semver": "^7.3.2",
+    "gawk": "^5.0.0",
+    "jdklib": "^4.0.0",
+    "semver": "^7.3.4",
     "source-map-support": "^0.5.19"
   },
   "devDependencies": {
-    "appcd-gulp": "^3.0.1"
+    "appcd-gulp": "^3.1.0"
   },
   "homepage": "https://github.com/appcelerator/appc-daemon",
   "bugs": "https://github.com/appcelerator/appcd-plugin-jdk/issues",
